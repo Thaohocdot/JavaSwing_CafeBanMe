@@ -1,0 +1,113 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package DAO;
+
+import Entity.BanChitiet;
+import JDBCHelper.jdbcHelper;
+import java.sql.ResultSet;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ *
+ * @author HP
+ */
+public class BanChitietDAO implements InterfaceBanchitiet{
+    String INSERT_SQL = "INSERT dbo.BanChiTiet VALUES(?,?,?,?)";
+    String UPDATE_SQL = "UPDATE dbo.BanChiTiet SET ID_Ban = ? WHERE ID_Hoadon = ?";
+    String DELETE_SQL = "DELETE dbo.BanChiTiet WHERE ID_Ban = ?";
+    String SELECT_ALL_SQL = "SELECT * FROM dbo.BanChiTiet WHERE Trangthai = 1";
+    String SELECT_BY_ID_SQL = "select * from dbo.BanChiTiet where ID_Hoadon = ? AND ID_Ban = ?";
+    String SELECT_BY_ID_HD = "SELECT * FROM dbo.BanChiTiet WHERE ID_Hoadon = ?";
+    String SELECT_BY_ID_Ban = "SELECT * FROM dbo.HoaDon JOIN dbo.BanChiTiet ON BanChiTiet.ID_Hoadon = HoaDon.ID_Hoadon WHERE TTThanhtoan = 0 AND dbo.HoaDon.Trangthai = 1 AND  ID_Ban = ? ";
+    String SELECT_ALL_BAN_GOP = "SELECT  HoaDon.ID_Hoadon FROM dbo.BanChiTiet JOIN dbo.HoaDon ON HoaDon.ID_Hoadon = BanChiTiet.ID_Hoadon\n" +
+        "WHERE dbo.HoaDon.Trangthai = 1 AND dbo.HoaDon.TTThanhtoan = 0 GROUP BY  HoaDon.ID_Hoadon HAVING COUNT(BanChiTiet.ID_Hoadon) > 1\n" +
+        "ORDER BY dbo.HoaDon.ID_Hoadon ASC";
+    String SELECT_donchinh = "SELECT * FROM dbo.Ban JOIN dbo.BanChiTiet ON BanChiTiet.ID_Ban = Ban.ID_Ban \n" +
+        "JOIN dbo.HoaDon ON HoaDon.ID_Hoadon = BanChiTiet.ID_Hoadon WHERE dbo.HoaDon.Trangthai = 1\n" +
+        "AND dbo.HoaDon.TTThanhtoan = 0 AND Donchinh = 1 AND BanChiTiet.ID_Hoadon = ?";
+    @Override
+    public void insert(BanChitiet Entity) {
+        JDBCHelper.jdbcHelper.update(INSERT_SQL, Entity.getID_Ban(), Entity.getID_HoaDon(), Entity.getThoidiemCoNguoi(), Entity.isBanChinh());
+    }
+
+    @Override
+    public void update(int idban,int idHoadon) {
+        JDBCHelper.jdbcHelper.update(UPDATE_SQL, idban,idHoadon);
+    }
+
+    @Override
+    public void delete(int id) {
+        JDBCHelper.jdbcHelper.update(DELETE_SQL, id);
+    }
+
+    @Override
+    public BanChitiet selectById(int idban,int idHoadon) {
+        List<BanChitiet> list = this.selectBySql(SELECT_BY_ID_SQL, idHoadon,idban);
+        if (list.isEmpty()) {
+            return null;
+        }
+        return list.get(0);
+    }
+
+    @Override
+    public List<BanChitiet> selectAll() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public List<BanChitiet> selectBySql(String sql, Object... args) {
+        List<BanChitiet> list = new ArrayList<>();
+        try {
+            ResultSet rs = jdbcHelper.query(sql, args);
+            while (rs.next()) {
+                BanChitiet Entity = new BanChitiet();
+                Entity.setID_Ban(rs.getInt("ID_Ban"));
+                Entity.setID_HoaDon(rs.getInt("ID_Hoadon"));
+                Entity.setThoidiemCoNguoi(rs.getTime("Thoidiemconguoi"));
+                Entity.setBanChinh(rs.getBoolean("Donchinh"));
+                System.out.println(rs.getTime("Thoidiemconguoi"));
+                list.add(Entity);
+            }
+            rs.getStatement().getConnection().close();
+            return list;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public List<BanChitiet> selectByIdBan(int idban) {
+        return selectBySql(SELECT_BY_ID_Ban, idban);
+    }
+
+    @Override
+    public List<BanChitiet> selectByIdHD(int idHoadon) {
+        return selectBySql(SELECT_BY_ID_HD, idHoadon);
+    }
+
+    public List<Integer> selectallbangop(){
+        List<Integer> list = new ArrayList<>();
+        try {
+            ResultSet rs = jdbcHelper.query(SELECT_ALL_BAN_GOP);
+            while (rs.next()) {
+                list.add(rs.getInt("ID_Hoadon"));
+            }
+            rs.getStatement().getConnection().close();
+            return list;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+    
+    public BanChitiet selectBydonchinh(int id) {
+        List<BanChitiet> list = this.selectBySql(SELECT_donchinh, id);
+        if (list.isEmpty()) {
+            return null;
+        }
+        return list.get(0);
+    }
+}
